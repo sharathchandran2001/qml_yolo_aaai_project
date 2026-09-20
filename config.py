@@ -12,6 +12,12 @@ PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed")
 IMAGES_DIR = os.path.join(DATA_DIR, "images")
 LABELS_DIR = os.path.join(DATA_DIR, "labels")
 
+# Subdirectories for YOLO Training & Validation Data
+YOLO_IMG_TRAIN = os.path.join(IMAGES_DIR, "train")
+YOLO_LABEL_TRAIN = os.path.join(LABELS_DIR, "train")
+YOLO_IMG_VAL = os.path.join(IMAGES_DIR, "val")
+YOLO_LABEL_VAL = os.path.join(LABELS_DIR, "val")
+
 # YOLO Model Configuration
 YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "yolov8s.pt")
 YOLO_RUNS_DIR = os.path.join(BASE_DIR, "runs")

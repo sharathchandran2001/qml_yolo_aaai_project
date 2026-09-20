@@ -1,61 +1,43 @@
-import cv2
-import shutil
-from pathlib import Path
-from config import (
-    YOLO_IMG_TRAIN, YOLO_LBL_TRAIN,
-    YOLO_IMG_VAL, YOLO_LBL_VAL
-)
+import os
 
-def convert_to_yolo(size, box):
-    """
-    Converts (x1, y1, x2, y2) pixel bounding box to YOLO normalized format:
-    [center_x, center_y, width, height]
-    """
-    img_w, img_h = size
-    x1, y1, x2, y2 = box
+# ==============================================================================
+# PROJECT DIRECTORY & FILE PATHS
+# ==============================================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    # Calculate center, width, height
-    cx = (x1 + x2) / (2.0 * img_w)
-    cy = (y1 + y2) / (2.0 * img_h)
-    w = (x2 - x1) / float(img_w)
-    h = (y2 - y1) / float(img_h)
+DATA_DIR = os.path.join(BASE_DIR, "data")
+RAW_DATA_DIR = os.path.join(DATA_DIR, "raw")
+PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed")
 
-    return (cx, cy, w, h)
+IMAGES_DIR = os.path.join(DATA_DIR, "images")
+LABELS_DIR = os.path.join(DATA_DIR, "labels")
 
+# Subdirectories for YOLO Training & Validation Data
+YOLO_IMG_TRAIN = os.path.join(IMAGES_DIR, "train")
+YOLO_LABEL_TRAIN = os.path.join(LABELS_DIR, "train")
+YOLO_LBL_TRAIN = YOLO_LABEL_TRAIN  # Alias expected by coordinate_tagger.py
 
-def create_yolo_label(image_path, annotations, is_val=False):
-    """
-    Processes an image and its raw pixel annotations.
-    """
-    image_path = Path(image_path).resolve()
-    img = cv2.imread(str(image_path))
-    if img is None:
-        raise FileNotFoundError(f"Image not found at {image_path}")
+YOLO_IMG_VAL = os.path.join(IMAGES_DIR, "val")
+YOLO_LABEL_VAL = os.path.join(LABELS_DIR, "val")
+YOLO_LBL_VAL = YOLO_LABEL_VAL      # Alias expected by coordinate_tagger.py
 
-    h, w, _ = img.shape
+# YOLO Model Configuration
+YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "yolov8s.pt")
+YOLO_RUNS_DIR = os.path.join(BASE_DIR, "runs")
 
-    # Define destination paths
-    dst_img_dir = YOLO_IMG_VAL if is_val else YOLO_IMG_TRAIN
-    dst_lbl_dir = YOLO_LBL_VAL if is_val else YOLO_LBL_TRAIN
+# ==============================================================================
+# FEATURE EXTRACTION & IMAGE PREPROCESSING
+# ==============================================================================
+CROP_SIZE = (32, 32)          # Standardized bounding box crop dimension
+FEATURE_DIM = 1024            # Flattened feature dimension (32 * 32)
 
-    target_img_path = (dst_img_dir / image_path.name).resolve()
+# ==============================================================================
+# QUANTUM MACHINE LEARNING (QML) HYPERPARAMETERS
+# ==============================================================================
+NUM_QUBITS = 4                # Number of qubits (4-D input via PCA)
+NUM_LAYERS = 3                # StronglyEntanglingLayers depth
+LEARNING_RATE = 0.1           # Adam optimizer learning rate
+EPOCHS = 20                   # Training epochs for PennyLane VQC
 
-    # Copy image only if target path is different from source path
-    if image_path != target_img_path:
-        shutil.copy(image_path, target_img_path)
-        print(f"[+] Copied image to: {target_img_path}")
-    else:
-        print(f"[+] Image already located at target directory: {target_img_path}")
-
-    # Write YOLO label file (.txt)
-    txt_filename = image_path.stem + ".txt"
-    target_txt_path = dst_lbl_dir / txt_filename
-
-    with open(target_txt_path, "w") as f:
-        for ann in annotations:
-            cls_id, x1, y1, x2, y2 = ann
-            cx, cy, box_w, box_h = convert_to_yolo((w, h), (x1, y1, x2, y2))
-            # Format: class_id center_x center_y width height
-            f.write(f"{cls_id} {cx:.6f} {cy:.6f} {box_w:.6f} {box_h:.6f}\n")
-
-    print(f"[+] Label written to: {target_txt_path}")
+# Class Mappings (Binary)
+CLASS_NAMES = ["calculator_display", "button_node"]
