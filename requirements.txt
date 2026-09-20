@@ -1,0 +1,10 @@
+ultralytics
+pennylane
+scikit-learn
+opencv-python
+pillow
+numpy
+torch
+torchvision
+seaborn 
+matplotlib

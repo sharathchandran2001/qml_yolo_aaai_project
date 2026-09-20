@@ -1,0 +1,7 @@
+path: ./data
+train: images/train
+val: images/val
+
+names:
+  0: calculator_display
+  1: button_node
