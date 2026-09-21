@@ -17,7 +17,7 @@ from models.quantum_ml import QuantumClassifierModel
 # 1. SHARED PREPROCESSING & FIXED PCA SCALER
 # ==============================================================================
 class SharedPCATransformer:
-    def __init__(self, n_components=NUM_QUBITS):
+    def __init__(self, n_components=4):
         self.n_components = n_components
         self.pca = PCA(n_components=n_components)
         self.scale_max = 1.0
@@ -37,6 +37,9 @@ class SharedPCATransformer:
 # 2. CLASS BALANCING HELPER
 # ==============================================================================
 def balance_dataset(X: np.ndarray, y: np.ndarray):
+    """
+    Oversamples the minority class (calculator_display) so classes are 1:1 balanced.
+    """
     classes, counts = np.unique(y, return_counts=True)
     if len(classes) < 2:
         return X, y
@@ -53,6 +56,7 @@ def balance_dataset(X: np.ndarray, y: np.ndarray):
     X_bal = np.vstack(balanced_X)
     y_bal = np.hstack(balanced_y)
     
+    # Shuffle dataset
     shuffle_idx = np.random.permutation(len(y_bal))
     return X_bal[shuffle_idx], y_bal[shuffle_idx]
 
@@ -82,7 +86,7 @@ def save_confusion_matrices(confusion_matrices, save_path):
     for ax, (name, cm) in zip(axes, confusion_matrices.items()):
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
                     xticklabels=CLASS_NAMES, yticklabels=CLASS_NAMES, cbar=False)
-        ax.set_title(name, fontsize=8, fontweight='bold')
+        ax.set_title(name, fontsize=10, fontweight='bold')
         ax.set_xlabel("Predicted")
         ax.set_ylabel("Actual")
 
@@ -104,7 +108,7 @@ def save_benchmark_chart(results, save_path):
         ax.bar(x + i * width, values, width, label=metric)
 
     ax.set_ylabel('Score')
-    ax.set_title('Classical vs. Quantum Model Comparison', fontweight='bold')
+    ax.set_title('Classical vs. Quantum Model Comparison (Strict Image-Level Split)', fontweight='bold')
     ax.set_xticks(x + width * 1.5)
     ax.set_xticklabels(models, rotation=15, ha='right')
     ax.set_ylim(0, 1.1)
@@ -120,10 +124,11 @@ def save_benchmark_chart(results, save_path):
 # ==============================================================================
 def run_rigorous_benchmark():
     os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
-    print(f"[+] Initializing Benchmark Pipeline with NUM_QUBITS = {NUM_QUBITS}...")
+    print("[+] Initializing Strict Image-Level Benchmark Pipeline...")
 
     extractor = YOLOCropExtractor()
 
+    # Strict Image-Level Split
     train_img_dir = os.path.join(DATA_DIR, "images", "train")
     val_img_dir = os.path.join(DATA_DIR, "images", "val")
 
@@ -131,25 +136,24 @@ def run_rigorous_benchmark():
     X_test_1024, y_test = extractor.extract_all_crop_features(images_dir=val_img_dir)
 
     if len(X_train_raw) == 0 or len(X_test_1024) == 0:
-        raise ValueError("[-] Feature extraction failed. Ensure images exist in data/images/train and val.")
+        raise ValueError("[-] Feature extraction failed. Ensure images exist in data/images/train and data/images/val.")
 
+    # Balance Training Set
     X_train_1024, y_train = balance_dataset(X_train_raw, y_train_raw)
 
-    print(f"[+] Dataset Split: {len(X_train_1024)} Balanced Train Crops | {len(X_test_1024)} Test Crops")
+    print(f"[+] Dataset Split (Strict Image-Level): {len(X_train_1024)} Balanced Train Crops | {len(X_test_1024)} Test Crops")
 
     # Shared PCA Compression Stage
     pca_scaler = SharedPCATransformer(n_components=NUM_QUBITS)
-    X_train_pca = pca_scaler.fit_transform(X_train_1024)
-    X_test_pca = pca_scaler.transform(X_test_1024)
-
-    pca_label = f"{NUM_QUBITS}-D PCA"
+    X_train_4d = pca_scaler.fit_transform(X_train_1024)
+    X_test_4d = pca_scaler.transform(X_test_1024)
 
     models = {
         "SVM (1024-D)": SVC(kernel='rbf', C=1.0),
         "Random Forest (1024-D)": RandomForestClassifier(n_estimators=100, random_state=42),
-        f"SVM ({pca_label})": SVC(kernel='rbf', C=1.0),
-        f"Random Forest ({pca_label})": RandomForestClassifier(n_estimators=100, random_state=42),
-        f"Quantum VQC ({pca_label})": QuantumClassifierModel(
+        "SVM (4-D PCA)": SVC(kernel='rbf', C=1.0),
+        "Random Forest (4-D PCA)": RandomForestClassifier(n_estimators=100, random_state=42),
+        "Quantum VQC (4-D PCA)": QuantumClassifierModel(
             n_qubits=NUM_QUBITS, n_layers=NUM_LAYERS, lr=LEARNING_RATE, epochs=EPOCHS
         )
     }
@@ -163,7 +167,7 @@ def run_rigorous_benchmark():
         if "1024-D" in name:
             X_tr, X_te = X_train_1024, X_test_1024
         else:
-            X_tr, X_te = X_train_pca, X_test_pca
+            X_tr, X_te = X_train_4d, X_test_4d
 
         if "Quantum" in name:
             model.fit_preprocessed(X_tr, y_train)
@@ -192,13 +196,14 @@ def run_rigorous_benchmark():
     print("\n" + "=" * 88)
     print(f"{'RIGOROUS AAAI RESEARCH COMPARATIVE BENCHMARK':^88}")
     print("=" * 88)
-    print(f"{'Model Architecture':<28} | {'Acc':<7} | {'Prec':<7} | {'Rec':<7} | {'F1-Score':<8} | {'Latency (ms)':<16}")
+    print(f"{'Model Architecture':<25} | {'Acc':<7} | {'Prec':<7} | {'Rec':<7} | {'F1-Score':<8} | {'Latency (ms)':<16}")
     print("-" * 88)
     for name, m in results.items():
         lat_str = f"{m['Latency (ms)']:.3f} ± {m['Latency Std']:.3f}"
-        print(f"{name:<28} | {m['Accuracy']:<7.4f} | {m['Precision']:<7.4f} | {m['Recall']:<7.4f} | {m['F1-Score']:<8.4f} | {lat_str:<16}")
+        print(f"{name:<25} | {m['Accuracy']:<7.4f} | {m['Precision']:<7.4f} | {m['Recall']:<7.4f} | {m['F1-Score']:<8.4f} | {lat_str:<16}")
     print("=" * 88)
 
+    # Save Plots
     cm_path = os.path.join(PROCESSED_DATA_DIR, "confusion_matrices.png")
     chart_path = os.path.join(PROCESSED_DATA_DIR, "classical_vs_qml_benchmark.png")
 

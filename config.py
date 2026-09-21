@@ -15,8 +15,11 @@ LABELS_DIR = os.path.join(DATA_DIR, "labels")
 # Subdirectories for YOLO Training & Validation Data
 YOLO_IMG_TRAIN = os.path.join(IMAGES_DIR, "train")
 YOLO_LABEL_TRAIN = os.path.join(LABELS_DIR, "train")
+YOLO_LBL_TRAIN = YOLO_LABEL_TRAIN
+
 YOLO_IMG_VAL = os.path.join(IMAGES_DIR, "val")
 YOLO_LABEL_VAL = os.path.join(LABELS_DIR, "val")
+YOLO_LBL_VAL = YOLO_LABEL_VAL
 
 # YOLO Model Configuration
 YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "yolov8s.pt")
@@ -31,10 +34,10 @@ FEATURE_DIM = 1024            # Flattened feature dimension (32 * 32)
 # ==============================================================================
 # QUANTUM MACHINE LEARNING (QML) HYPERPARAMETERS
 # ==============================================================================
-NUM_QUBITS = 4                # Number of qubits (4-D input via PCA)
+NUM_QUBITS = 6                # Increased to 6 Qubits (6-D PCA space)
 NUM_LAYERS = 3                # StronglyEntanglingLayers depth
-LEARNING_RATE = 0.1           # Adam optimizer learning rate
-EPOCHS = 20                   # Training epochs for PennyLane VQC
+LEARNING_RATE = 0.05          # Learning rate for VQC optimizer
+EPOCHS = 50                   # Extended epochs for convergence
 
 # Class Mappings (Binary)
 CLASS_NAMES = ["calculator_display", "button_node"]
