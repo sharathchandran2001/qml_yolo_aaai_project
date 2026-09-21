@@ -5,9 +5,9 @@ import numpy as np
 class QuantumClassifierModel:
     """
     Variational Quantum Classifier (VQC) implemented using PennyLane.
-    Accepts 4-dimensional angularly encoded feature vectors.
+    Accepts n-dimensional angularly encoded feature vectors.
     """
-    def __init__(self, n_qubits: int = 4, n_layers: int = 3, lr: float = 0.1, epochs: int = 20):
+    def __init__(self, n_qubits: int = 6, n_layers: int = 3, lr: float = 0.1, epochs: int = 20):
         self.n_qubits = n_qubits
         self.n_layers = n_layers
         self.lr = lr
@@ -21,7 +21,7 @@ class QuantumClassifierModel:
         # Define QNode circuit
         @qml.qnode(self.dev, interface="autograd")
         def circuit(weights, x):
-            # 1. Angle Encoding via RX rotations across 4 qubits
+            # 1. Angle Encoding via RX rotations across n qubits
             for i in range(self.n_qubits):
                 qml.RX(x[i], wires=i)
 
@@ -38,53 +38,57 @@ class QuantumClassifierModel:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=self.n_layers, n_wires=self.n_qubits)
         return pnp.random.random(size=shape, requires_grad=True)
 
-    def _cost(self, weights, bias, X, y_targets):
-        """Mean Squared Error cost function on target expectation values."""
-        predictions = [self.circuit(weights, x) + bias for x in X]
-        return pnp.mean((pnp.array(predictions) - y_targets) ** 2)
+    def _cost(self, weights, bias, X, y_targets, sample_weights):
+        """Class-weighted Mean Squared Error cost function on target expectation values."""
+        predictions = pnp.stack([self.circuit(weights, x) + bias for x in X])
+        squared_errors = (predictions - y_targets) ** 2
+        return pnp.mean(sample_weights * squared_errors)
 
-    def fit_preprocessed(self, X_4d: np.ndarray, y: np.ndarray):
+    def fit_preprocessed(self, X_nd: np.ndarray, y: np.ndarray):
         """
-        Trains the VQC directly on pre-transformed 4-D features.
+        Trains the VQC directly on pre-transformed N-D features using class weighting.
         
         Args:
-            X_4d: Numpy array of shape (N, 4) with pre-scaled PCA features.
+            X_nd: Numpy array of shape (N, n_qubits) with pre-scaled PCA features.
             y: Target binary class labels in {0, 1}.
         """
+        # Calculate inverse class weights to penalize minority class classification errors
+        classes, counts = np.unique(y, return_counts=True)
+        class_weights = {cls: len(y) / (len(classes) * count) for cls, count in zip(classes, counts)}
+        sample_weights = pnp.array([class_weights[label] for label in y], requires_grad=False)
+
         # Map binary class labels {0, 1} to Pauli-Z target expectation domain {-1, +1}
         y_targets = pnp.array([1.0 if label == 1 else -1.0 for label in y], requires_grad=False)
-        X_data = pnp.array(X_4d, requires_grad=False)
+        X_data = pnp.array(X_nd, requires_grad=False)
 
         opt = qml.AdamOptimizer(stepsize=self.lr)
 
-        print(f"   [QML] Training 4-Qubit VQC over {self.epochs} epochs...")
+        print(f"   [QML] Training {self.n_qubits}-Qubit VQC over {self.epochs} epochs...")
         for epoch in range(self.epochs):
             (self.weights, self.bias), loss = opt.step_and_cost(
-                lambda w, b: self._cost(w, b, X_data, y_targets),
+                lambda w, b: self._cost(w, b, X_data, y_targets, sample_weights),
                 self.weights,
                 self.bias
             )
             if (epoch + 1) % 5 == 0 or epoch == 0:
-                print(f"   [QML] Epoch {epoch + 1:02d}/{self.epochs:02d} | Loss: {loss:.4f}")
+                print(f"   [QML] Epoch {epoch + 1:02d}/{self.epochs:02d} | Weighted Loss: {loss:.4f}")
 
-    def predict_preprocessed(self, X_4d: np.ndarray) -> np.ndarray:
+    def predict_preprocessed(self, X_nd: np.ndarray) -> np.ndarray:
         """
-        Predicts binary class labels directly from pre-transformed 4-D features.
+        Predicts binary class labels directly from pre-transformed N-D features.
         
         Args:
-            X_4d: Numpy array of shape (N, 4) or single sample vector (4,).
+            X_nd: Numpy array of shape (N, n_qubits) or single sample vector (n_qubits,).
             
         Returns:
             Numpy array of predicted binary labels {0, 1}.
         """
-        # Handle single-sample inputs during latency benchmarking
-        if X_4d.ndim == 1:
-            X_4d = np.expand_dims(X_4d, axis=0)
+        if X_nd.ndim == 1:
+            X_nd = np.expand_dims(X_nd, axis=0)
 
         predictions = []
-        for x in X_4d:
+        for x in X_nd:
             exp_val = self.circuit(self.weights, x) + self.bias
-            # Decision boundary: Expectation >= 0 maps to class 1, < 0 maps to class 0
             pred_label = 1 if float(exp_val) >= 0.0 else 0
             predictions.append(pred_label)
 
