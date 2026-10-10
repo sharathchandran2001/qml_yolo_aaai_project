@@ -1,0 +1,86 @@
+{
+  "pca_cumvar": [
+    0.9178333878517151,
+    0.9550603628158569,
+    0.976367712020874,
+    0.983655571937561,
+    0.9879123568534851,
+    0.9905831813812256,
+    0.9929372072219849,
+    0.9947282671928406,
+    0.9962021708488464,
+    0.9974536299705505,
+    0.9984464645385742,
+    0.9990770220756531
+  ],
+  "n_qubits": 12,
+  "features_per_qubit": 1,
+  "dim": 12,
+  "space": "pca",
+  "args": {
+    "dims": [
+      2,
+      3,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16
+    ],
+    "models": [
+      "majority",
+      "svm",
+      "rf",
+      "vqc"
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "split": "fixed",
+    "folds": 5,
+    "skip_full": false,
+    "images_dir": "D:\\arxiv_research_projects\\qml_yolo_aaai_project\\data\\images",
+    "crop_source": "labels",
+    "weights": null,
+    "refresh": false,
+    "oversample_per_class": null,
+    "layers": 3,
+    "epochs": 50,
+    "lr": 0.1,
+    "batch_size": 32,
+    "max_qubits": 12,
+    "allow_large": false,
+    "mem_gb": 1.0,
+    "init": "uniform",
+    "angle_scale": "global",
+    "threshold": "zero",
+    "verbose": false,
+    "latency_warmup": 20,
+    "latency_runs": 100,
+    "results_dir": "D:\\arxiv_research_projects\\qml_yolo_aaai_project\\results",
+    "tag": "default",
+    "smoke_test": false
+  },
+  "data": {
+    "positive_class_id": 0,
+    "class_counts": {
+      "0": 5,
+      "1": 15
+    },
+    "n_crops": 20,
+    "n_images": 5,
+    "crop_source": "labels"
+  },
+  "versions": {
+    "python": "3.14.3",
+    "numpy": "2.5.3",
+    "sklearn": "1.9.1",
+    "pennylane": "0.45.1"
+  },
+  "wall_time_s": 240.8713014125824,
+  "timestamp": "2026-10-10 14:14:40"
+}

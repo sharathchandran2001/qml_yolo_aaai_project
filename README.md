@@ -1,3 +1,7 @@
+python qml_benchmark.py --dims 2 4 6 8 10 12 16--split cv --folds 5 --seeds 0 1 2
+python generate_report.py
+
+'''
 qml_yolo_aaai_project/
 │
 ├── annotation_tool/             # Dataset collection & manual labeling tools
@@ -30,7 +34,7 @@ qml_yolo_aaai_project/
 ├── requirements.txt             # Environment dependencies[cite: 4]
 └── .gitignore                   # Git exclusion rules[cite: 4]
 
-    
+'''    
 
 
 

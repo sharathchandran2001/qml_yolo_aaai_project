@@ -1,7 +1,7 @@
 import base64
 import requests
 
-# Updated 4-Stage Workflow Mermaid Code
+# Updated 4-Stage Workflow Mermaid Code (Reflecting 6D / 6-Qubit Architecture)
 mermaid_code = """
 flowchart TD
     classDef humanNode fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
@@ -26,10 +26,10 @@ flowchart TD
     subgraph Classification ["Stage 3: Dual-Path Machine Learning"]
         direction TB
         G -->|"Path A: Uncompressed 1024-D"| H["Classical ML Classifiers<br/>(SVM & Random Forest)"]:::classicalNode
-        G -->|"Path B: Orthogonal Projection"| I["PCA Dimensionality Reduction<br/>(1024-D → 4-D Compression)"]:::quantumNode
+        G -->|"Path B: Orthogonal Projection"| I["PCA Dimensionality Reduction<br/>(1024-D → 6-D Compression)"]:::quantumNode
 
-        I -->|"Compressed 4-D Vector"| J["4-Qubit Angle Encoding<br/>(Single-Qubit RX Gates)"]:::quantumNode
-        J --> K["Strongly Entangling Ansatz<br/>(L=3 Layers, 36 Trainable Params)"]:::quantumNode
+        I -->|"Compressed 6-D Vector"| J["6-Qubit Angle Encoding<br/>(Single-Qubit RX Gates)"]:::quantumNode
+        J --> K["Strongly Entangling Ansatz<br/>(L=3 Layers, 54 Trainable Params)"]:::quantumNode
         K --> L["Pauli-Z Expectation Measurement<br/>(Qubit 0 State Measurement ⟨Z₀⟩)"]:::quantumNode
         L --> M["Variational Quantum Classifier<br/>(QML Prediction)"]:::quantumNode
 
@@ -50,20 +50,20 @@ flowchart TD
     style Evaluation fill:#f1f8f1,stroke:#2e7d32,stroke-width:1.5px
 """
 
-def save_mermaid_png(code: str, output_filename: str = "updated_pipeline_workflow.png"):
+def save_mermaid_png(code: str, output_filename: str = "pipeline_diagram_1.png"):
     # Base64 encode the string for the endpoint
     encoded_bytes = base64.b64encode(code.encode("utf-8"))
     encoded_string = encoded_bytes.decode("utf-8")
     
     url = f"https://mermaid.ink/img/{encoded_string}"
     
-    print(f"[+] Fetching rendered diagram from API...")
+    print("[+] Fetching rendered 6D/6-Qubit diagram from API...")
     response = requests.get(url)
     
     if response.status_code == 200:
         with open(output_filename, "wb") as f:
             f.write(response.content)
-        print(f"[✔] Successfully saved diagram to: {output_filename}")
+        print(f"[✔] Successfully saved updated diagram to: {output_filename}")
     else:
         print(f"[✘] Failed to retrieve image. Status code: {response.status_code}")
 

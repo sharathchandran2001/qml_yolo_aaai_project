@@ -4,7 +4,8 @@ scikit-learn
 opencv-python
 pillow
 numpy
+pandas
 torch
 torchvision
-seaborn 
+seaborn
 matplotlib
